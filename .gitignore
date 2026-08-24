@@ -1,0 +1,46 @@
+# Ignore Visual Studio / Rider files
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+**/bin/
+**/obj/
+**/Debug/
+**/Release/
+*.dll
+*.exe
+*.app
+*.deps.json
+*.runtimeconfig.json
+
+# .NET
+artifacts/
+.nuget/
+
+# Node
+/frontend/node_modules/
+/node_modules/
+/frontend/dist/
+/dist/
+
+# Vite / env
+.env
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.tmp
