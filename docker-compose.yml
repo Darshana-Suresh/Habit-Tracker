@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: habit-tracker-db
+    environment:
+      POSTGRES_USER: habit_user
+      POSTGRES_PASSWORD: habit_pass
+      POSTGRES_DB: habit_tracker
+    volumes:
+      # Named volume — Postgres's data directory lives here, outside the
+      # container's writable layer, so `docker compose down` (without
+      # -v) or a container restart never touches it.
+      - pgdata:/var/lib/postgresql/data
+      # The official Postgres image auto-runs any .sql file found here,
+      # in filename order, but ONLY the very first time the volume is
+      # empty. That's how the schema + seed habits get created without
+      # a manual migration step.
+      - ./server-dotnet/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5433:5432" # optional — lets you psql in from the host to inspect data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habit_user -d habit_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./server-dotnet/HabitTracker.Api
+    container_name: habit-tracker-backend
+    environment:
+      # "db" is resolved via Docker's internal DNS to the db service's
+      # container — this only works between containers on this network,
+      # never from a browser, which is why the frontend uses localhost
+      # below instead.
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=habit_tracker;Username=habit_user;Password=habit_pass"
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      args:
+        # Baked into the JS bundle at build time — must be an address
+        # the browser (running on your host machine) can reach.
+        VITE_API_BASE_URL: http://localhost:4000/api
+    container_name: habit-tracker-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

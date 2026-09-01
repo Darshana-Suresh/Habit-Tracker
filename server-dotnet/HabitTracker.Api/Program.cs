@@ -3,26 +3,28 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Specifying that API end points will be in dedicated controller classes
 builder.Services.AddControllers();
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Missing ConnectionStrings:Default in appsettings.json");
 var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
-//Creates one instance of the below managers
 builder.Services.AddSingleton(dataSourceBuilder.Build());
 builder.Services.AddSingleton<HabitStore>();
-//Register swagger
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// The Vite dev server runs on :5173 by default — allow it to call this
-// API from the browser. Add any other frontend origins here too.
+// Allow the dev server (:5173) and the containerized frontend (:3000,
+// see docker-compose.yml) by default; overridable via config/env
+// (Cors__AllowedOrigins__0=..., etc.) without a code change.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -37,7 +39,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Frontend");
-//Connects incoming network routes directly to your Controller code files.
 app.MapControllers();
 
 app.Run();

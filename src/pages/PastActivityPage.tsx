@@ -22,7 +22,11 @@ export default function PastActivityPage() {
   const { monthKey } = useParams<{ monthKey?: string }>();
   const now = useClock();
   const pastMonths = pastMonthsBefore(now, MONTHS_TO_LIST);
-  const viewedMonth = pastMonths.find((m) => m.key === monthKey);
+
+  // Called on every render, regardless of which branch below fires —
+  // hooks must run in the same order every time, so this can't move
+  // below the early returns. usePastMonthData already treats an
+  // undefined monthKey as "nothing to fetch yet".
   const { habits, grid, loading, error } = usePastMonthData(monthKey);
 
   if (!monthKey) {
@@ -31,6 +35,8 @@ export default function PastActivityPage() {
     }
     return <Navigate to={`/past/${pastMonths[0].key}`} replace />;
   }
+
+  const viewedMonth = pastMonths.find((m) => m.key === monthKey);
 
   // A URL for a month that isn't a valid recent past month (typed by
   // hand, or just old) — send it back to the default rather than
